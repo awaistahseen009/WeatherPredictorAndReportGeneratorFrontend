@@ -6,19 +6,24 @@ import { db } from "./db";
 import { users } from "./db/schema";
 import { eq } from "drizzle-orm";
 
-// Environment variable validation
-const requiredEnvVars = {
-  NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-  DATABASE_URL: process.env.DATABASE_URL,
-  NEXTAUTH_URL: process.env.NEXTAUTH_URL || "http://localhost:3000",
+// Generate a fallback secret for development if NEXTAUTH_SECRET is missing
+const getNextAuthSecret = () => {
+  if (process.env.NEXTAUTH_SECRET) {
+    return process.env.NEXTAUTH_SECRET;
+  }
+  
+  if (process.env.NODE_ENV === "development") {
+    console.warn("⚠️  NEXTAUTH_SECRET not found, using development fallback");
+    return "development-secret-please-change-in-production";
+  }
+  
+  throw new Error("NEXTAUTH_SECRET environment variable is required in production");
 };
 
-// Check for required environment variables
-Object.entries(requiredEnvVars).forEach(([key, value]) => {
-  if (!value && key !== "NEXTAUTH_URL") {
-    throw new Error(`${key} environment variable is required`);
-  }
-});
+// Validate required environment variables
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is required");
+}
 
 // NextAuth configuration
 export const authOptions = {
@@ -27,7 +32,7 @@ export const authOptions = {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: getNextAuthSecret(),
   pages: {
     signIn: "/auth/signin",
     signUp: "/auth/signup",
