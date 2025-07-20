@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { users } from "./db/schema";
@@ -11,16 +12,21 @@ const requiredEnvVars = {
   NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
   DATABASE_URL: process.env.DATABASE_URL,
   NEXTAUTH_URL: process.env.NEXTAUTH_URL || "http://localhost:3000",
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
 };
 
 // Check for required environment variables
 Object.entries(requiredEnvVars).forEach(([key, value]) => {
-  if (!value && key !== "NEXTAUTH_URL") {
+  if (!value && key !== "NEXTAUTH_URL" && key !== "GOOGLE_CLIENT_ID" && key !== "GOOGLE_CLIENT_SECRET") {
     throw new Error(`${key} environment variable is required`);
   }
 });
 
-// Optional Google OAuth validation
+// Check for Google OAuth environment variables
+if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+  console.warn("Google OAuth environment variables not found. Google authentication will be disabled.");
+}
 
 // NextAuth configuration
 export const authOptions = {
@@ -116,6 +122,14 @@ export const authOptions = {
         }
       },
     }),
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          }),
+        ]
+      : []),
   ],
 
   callbacks: {
