@@ -2,9 +2,9 @@ import { auth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export default auth((req) => {
-  // Add safety checks for req and nextUrl
-  if (!req || !req.nextUrl) {
-    console.error('Request or nextUrl is undefined in middleware');
+  // Add safety checks for req, req.url, and nextUrl
+  if (!req || !req.url || !req.nextUrl) {
+    console.error('Request, req.url, or nextUrl is undefined in middleware');
     return NextResponse.next();
   }
 
